@@ -16,7 +16,7 @@ intents.messages = True
 intents.guilds = True
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('/'), intents=intents)
-bot_personality = load_bot_personality("ranni_personality.txt")  # Update this with the correct file name
+bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
