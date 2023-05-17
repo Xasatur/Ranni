@@ -30,7 +30,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-    if not message.content.startswith(commands.when_mentioned_or('/').clean_prefix):
+    if not message.content.startswith(bot.command_prefix):
         if isinstance(message.channel, discord.DMChannel) or message.channel.name.lower() == 'ranni-bot':
             # Ranni responds in DMs and the #Ranni-Bot channel
             await generate_and_send_response(message)
