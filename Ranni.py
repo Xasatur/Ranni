@@ -34,10 +34,6 @@ async def on_message(message):
         if isinstance(message.channel, discord.DMChannel) or message.channel.name.lower() == 'ranni-bot':
             # Ranni responds in DMs and the #Ranni-Bot channel
             await generate_and_send_response(message)
-        elif message.channel.name.lower() == 'roundtable':
-            # Ranni responds when mentioned (not necessarily at the beginning) in the #Roundtable channel
-            if bot.user in message.mentions:
-                await generate_and_send_response(message)
 
 async def generate_and_send_response(message):
     data = {
@@ -63,12 +59,6 @@ async def generate_and_send_response(message):
     else:
         print("Error:", response.get("error"))
 
-
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
-
-
-
-
-
