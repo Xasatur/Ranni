@@ -1,4 +1,5 @@
 import os
+import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -25,39 +26,38 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    await bot.wait_until_ready()
+
     if message.author.bot:
         return
 
-    await bot.process_commands(message)
-
-    if not message.content.startswith(bot.command_prefix):
-        if isinstance(message.channel, discord.DMChannel) or message.channel.name.lower() == 'ranni-bot':
-            # Ranni responds in DMs and the #Ranni-Bot channel
-            await generate_and_send_response(message)
-
-async def generate_and_send_response(message):
-    data = {
-        "model": "gpt-3.5-turbo",
-        "messages": [
-            {"role": "system", "content": bot_personality},
-            {"role": "user", "content": message.content},
-        ],
-        "max_tokens": 1000,
-        "temperature": 0.7,
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {openai.api_key}",
-    }
-
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data).json()
-
-    if 'choices' in response:
-        ai_response = response["choices"][0]["message"]["content"].strip()
-        await message.channel.send(ai_response)
+    ctx = await bot.get_context(message)
+    if ctx.valid:
+        await bot.process_commands(message)
     else:
-        print("Error:", response.get("error"))
+        data = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "system", "content": bot_personality},
+                {"role": "user", "content": message.content},
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {openai.api_key}",
+        }
+
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data).json()
+
+        if 'choices' in response:
+            ai_response = response["choices"][0]["message"]["content"].strip()[:2000]  # Truncate to 2000 characters
+            await message.channel.send(ai_response)
+        else:
+            print("Error:", response.get("error"))
+
 
 if __name__ == '__main__':
     # Start bot
