@@ -42,7 +42,7 @@ async def on_message(message):
                 {"role": "user", "content": message.content},
             ],
             "max_tokens": 1000,
-            "temperature": 0.7,
+            "temperature": 0.9,
         }
 
         headers = {
@@ -53,10 +53,11 @@ async def on_message(message):
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data).json()
 
         if 'choices' in response:
-            ai_response = response["choices"][0]["message"]["content"].strip()
+            ai_response = response["choices"][0]["message"]["content"].strip()[:2000]  # Truncate to 2000 characters
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
+
 
 if __name__ == '__main__':
     # Start bot
