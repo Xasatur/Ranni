@@ -37,7 +37,7 @@ async def on_message(message):
         if isinstance(message.channel, discord.DMChannel) or message.channel.name == 'ranni-bot':
             # Ranni responds in DMs and the #Ranni-Bot channel
             await generate_and_send_response(message)
-        elif message.channel.name == 'roundtable':
+        elif message.channel.name.lower() == 'roundtable':
             # Ranni responds when mentioned (not necessarily at the beginning) in the #Roundtable channel
             if bot.user in message.mentions:
                 await generate_and_send_response(message)
