@@ -38,8 +38,8 @@ async def on_message(message):
             # Ranni responds in DMs and the #Ranni-Bot channel
             await generate_and_send_response(message)
         elif message.channel.name == 'roundtable':
-            # Ranni responds when mentioned at the beginning of the message in the #Roundtable channel
-            if message.content.startswith(f'{bot.user.mention} '):
+            # Ranni responds when mentioned (not necessarily at the beginning) in the #Roundtable channel
+            if bot.user in message.mentions:
                 await generate_and_send_response(message)
 
 async def generate_and_send_response(message):
