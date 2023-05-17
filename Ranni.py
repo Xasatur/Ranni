@@ -25,16 +25,13 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    await bot.wait_until_ready()
-
     if message.author.bot:
         return
 
-    ctx = await bot.get_context(message)
-    if ctx.valid:
-        await bot.process_commands(message)
-    else:
-        if isinstance(message.channel, discord.DMChannel) or message.channel.name == 'ranni-bot':
+    await bot.process_commands(message)
+
+    if not message.content.startswith(commands.when_mentioned_or('/').clean_prefix):
+        if isinstance(message.channel, discord.DMChannel) or message.channel.name.lower() == 'ranni-bot':
             # Ranni responds in DMs and the #Ranni-Bot channel
             await generate_and_send_response(message)
         elif message.channel.name.lower() == 'roundtable':
