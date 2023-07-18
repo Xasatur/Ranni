@@ -15,7 +15,7 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('/'), intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -49,14 +49,15 @@ async def on_member_join(member):
 
 @bot.event
 async def on_message(message):
+    await bot.wait_until_ready()
+
     if message.author.bot:
         return
 
-    if message.content.startswith(bot.command_prefix):
-        ctx = await bot.get_context(message)
-        await bot.process_commands(ctx.message)
+    ctx = await bot.get_context(message)
+    if ctx.valid:
+        await bot.process_commands(message)
     else:
-        await bot.wait_until_ready()
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
@@ -79,7 +80,6 @@ async def on_message(message):
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
-
 
 
 if __name__ == '__main__':
