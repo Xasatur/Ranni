@@ -25,6 +25,12 @@ async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
 
 @bot.event
+async def on_member_join(member):
+    welcome_channel = bot.get_channel(CHANNEL_ID)  # Replace CHANNEL_ID with the ID of the channel where you want to send welcome messages
+    welcome_message = f"Welcome {member.mention} to the server! I'm Ranni, your friendly bot and will help you on your journey!"
+    await welcome_channel.send(welcome_message)
+
+@bot.event
 async def on_message(message):
     await bot.wait_until_ready()
 
