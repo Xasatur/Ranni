@@ -49,15 +49,18 @@ async def on_member_join(member):
 
 @bot.event
 async def on_message(message):
-    await bot.wait_until_ready()
-
     if message.author.bot:
         return
 
-    ctx = await bot.get_context(message)
-    if ctx.valid:
-        await bot.process_commands(message)
-    else:
+    mentioned = False
+    for mention in message.mentions:
+        if mention.id == bot.user.id:
+            mentioned = True
+            break
+
+    if mentioned or "bot" in message.content.lower():
+        # Bot is mentioned or the message contains the keyword "bot"
+        await bot.wait_until_ready()
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
@@ -80,6 +83,7 @@ async def on_message(message):
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
+
 
 
 if __name__ == '__main__':
