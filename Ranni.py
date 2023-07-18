@@ -20,6 +20,23 @@ bot_personality = load_bot_personality("ranni personality.txt")  # Update this w
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+@bot.command()
+@commands.has_permissions(ban_members=True)
+async def ban(ctx, member: discord.Member):
+    await member.ban()
+    await ctx.send(f"{member.mention} has been banned.")
+
+@bot.command()
+@commands.has_permissions(ban_members=True)
+async def unban(ctx, user: discord.User):
+    banned_users = await ctx.guild.bans()
+    for ban_entry in banned_users:
+        if ban_entry.user.id == user.id:
+            await ctx.guild.unban(user)
+            await ctx.send(f"{user.name} has been unbanned.")
+            return
+    await ctx.send(f"{user.name} is not currently banned.")
+
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
