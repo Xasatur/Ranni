@@ -58,8 +58,10 @@ async def on_message(message):
             mentioned = True
             break
 
-    if mentioned or "bot" in message.content.lower():
-        # Bot is mentioned or the message contains the keyword "bot"
+    keywords = ["Rannibot", "ranni", "Ranni"]  # Add more keywords as needed
+
+    if mentioned or any(keyword in message.content.lower() for keyword in keywords):
+        # Bot is mentioned or the message contains one of the keywords
         await bot.wait_until_ready()
         data = {
             "model": "gpt-3.5-turbo",
@@ -83,6 +85,7 @@ async def on_message(message):
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
+
 
 
 
