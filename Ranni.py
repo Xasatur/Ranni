@@ -38,6 +38,12 @@ async def warn(ctx, member: discord.Member):
         await ctx.send(f"{member.mention} has reached 3 warnings and has been banned.")
 
 @bot.command()
+@commands.has_permissions(kick_members=True)
+async def kick(ctx, member: discord.Member, *, reason=None):
+    await member.kick(reason=reason)
+    await ctx.send(f"{member.mention} has been kicked from the server. Reason: {reason}")
+
+@bot.command()
 @commands.has_permissions(ban_members=True)
 async def unban(ctx, user: discord.User):
     banned_users = await ctx.guild.bans()
