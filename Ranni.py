@@ -15,26 +15,54 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('/'), intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+@bot.command()
+@commands.has_permissions(ban_members=True)
+async def ban(ctx, member: discord.Member):
+    await member.ban()
+    await ctx.send(f"{member.mention} has been banned.")
+
+@bot.command()
+@commands.has_permissions(ban_members=True)
+async def unban(ctx, user: discord.User):
+    banned_users = await ctx.guild.bans()
+    for ban_entry in banned_users:
+        if ban_entry.user.id == user.id:
+            await ctx.guild.unban(user)
+            await ctx.send(f"{user.name} has been unbanned.")
+            return
+    await ctx.send(f"{user.name} is not currently banned.")
 
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
 
 @bot.event
-async def on_message(message):
-    await bot.wait_until_ready()
+async def on_member_join(member):
+    welcome_channel = bot.get_channel(841775840089473056)  # Replace CHANNEL_ID with the ID of the channel where you want to send welcome messages
+    welcome_message = f"Welcome {member.mention} to the server! I'm Ranni, your friendly bot and will help you on your journey!"
+    await welcome_channel.send(welcome_message)
 
+@bot.event
+async def on_message(message):
     if message.author.bot:
         return
 
-    ctx = await bot.get_context(message)
-    if ctx.valid:
-        await bot.process_commands(message)
-    else:
+    mentioned = False
+    for mention in message.mentions:
+        if mention.id == bot.user.id:
+            mentioned = True
+            break
+
+    keywords = ["Rannibot", "ranni", "Ranni"]  # Add more keywords as needed
+
+    if mentioned or any(keyword in message.content.lower() for keyword in keywords):
+        # Bot is mentioned or the message contains one of the keywords
+        await bot.wait_until_ready()
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
@@ -57,6 +85,8 @@ async def on_message(message):
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
+
+
 
 
 if __name__ == '__main__':
