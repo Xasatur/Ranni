@@ -15,71 +15,26 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('/'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Dictionary to store the warning count for each user
-warnings = {}
-
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def warn(ctx, member: discord.Member):
-    if member.id not in warnings:
-        warnings[member.id] = 1
-    else:
-        warnings[member.id] += 1
-
-    await ctx.send(f"{member.mention} has been warned. Warning count: {warnings[member.id]}")
-
-    if warnings[member.id] >= 3:
-        await member.ban()
-        await ctx.send(f"{member.mention} has reached 3 warnings and has been banned.")
-
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason=None):
-    await member.kick(reason=reason)
-    await ctx.send(f"{member.mention} has been kicked from the server. Reason: {reason}")
-
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def unban(ctx, user: discord.User):
-    banned_users = await ctx.guild.bans()
-    for ban_entry in banned_users:
-        if ban_entry.user.id == user.id:
-            await ctx.guild.unban(user)
-            await ctx.send(f"{user.name} has been unbanned.")
-            return
-    await ctx.send(f"{user.name} is not currently banned.")
 
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
 
 @bot.event
-async def on_member_join(member):
-    welcome_channel = bot.get_channel(841775840089473056)  # Replace CHANNEL_ID with the ID of the channel where you want to send welcome messages
-    welcome_message = f"Welcome {member.mention} to the server! I'm Ranni, your friendly bot and will help you on your journey!"
-    await welcome_channel.send(welcome_message)
-
-@bot.event
 async def on_message(message):
+    await bot.wait_until_ready()
+
     if message.author.bot:
         return
 
-    mentioned = False
-    for mention in message.mentions:
-        if mention.id == bot.user.id:
-            mentioned = True
-            break
-
-    keywords = ["Rannibot", "ranni", "Ranni"]  # Add more keywords as needed
-
-    if mentioned or any(keyword in message.content.lower() for keyword in keywords):
-        # Bot is mentioned or the message contains one of the keywords
-        await bot.wait_until_ready()
+    ctx = await bot.get_context(message)
+    if ctx.valid:
+        await bot.process_commands(message)
+    else:
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
@@ -103,7 +58,7 @@ async def on_message(message):
         else:
             print("Error:", response.get("error"))
 
+
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
-
