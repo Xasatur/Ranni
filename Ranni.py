@@ -20,11 +20,22 @@ bot_personality = load_bot_personality("ranni personality.txt")  # Update this w
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Dictionary to store the warning count for each user
+warnings = {}
+
 @bot.command()
 @commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member):
-    await member.ban()
-    await ctx.send(f"{member.mention} has been banned.")
+async def warn(ctx, member: discord.Member):
+    if member.id not in warnings:
+        warnings[member.id] = 1
+    else:
+        warnings[member.id] += 1
+
+    await ctx.send(f"{member.mention} has been warned. Warning count: {warnings[member.id]}")
+
+    if warnings[member.id] >= 3:
+        await member.ban()
+        await ctx.send(f"{member.mention} has reached 3 warnings and has been banned.")
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
@@ -86,9 +97,7 @@ async def on_message(message):
         else:
             print("Error:", response.get("error"))
 
-
-
-
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
+
