@@ -43,9 +43,17 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    welcome_channel = bot.get_channel(841775840089473056)  # Replace CHANNEL_ID with the ID of the channel where you want to send welcome messages
+    welcome_channel = bot.get_channel(1050711007741358110)  # Replace CHANNEL_ID with the ID of the channel where you want to send welcome messages
     welcome_message = f"Welcome {member.mention} to the server! I'm Ranni, your friendly bot and will help you on your journey!"
     await welcome_channel.send(welcome_message)
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.channel_id == 1050711007741358110 and payload.message_id == 1173646740818231337 and payload.emoji.name == '✅':
+        guild = bot.get_guild(payload.guild_id)
+        role = discord.utils.get(guild.roles, name='YOUR_ROLE_NAME')
+        member = guild.get_member(payload.user_id)
+        await member.add_roles(role)
 
 @bot.event
 async def on_message(message):
