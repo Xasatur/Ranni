@@ -51,7 +51,7 @@ async def on_member_join(member):
 async def on_raw_reaction_add(payload):
     if payload.channel_id == 1050711007741358110 and payload.message_id == 1173646740818231337 and payload.emoji.name == '✅':
         guild = bot.get_guild(payload.guild_id)
-        role = discord.utils.get(guild.roles, name='YOUR_ROLE_NAME')
+        role = discord.utils.get(guild.roles, name='Hollow')
         member = guild.get_member(payload.user_id)
         await member.add_roles(role)
 
