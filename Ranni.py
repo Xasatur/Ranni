@@ -57,10 +57,13 @@ async def on_raw_reaction_add(payload):
             print("Role not found.")
             return
 
-        member = guild.get_member(payload.user_id)
-
-        if member is None:
+        try:
+            member = await guild.fetch_member(payload.user_id)
+        except discord.NotFound:
             print("Member not found.")
+            return
+        except discord.HTTPException:
+            print("An error occurred while fetching the member.")
             return
 
         try:
