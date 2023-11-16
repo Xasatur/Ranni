@@ -51,7 +51,7 @@ async def on_raw_reaction_add(payload):
     print("Reaction added!")
     if payload.channel_id == 1050711007741358110 and payload.message_id == 1173646740818231337 and payload.emoji.name == '✅':
         guild = bot.get_guild(payload.guild_id)
-        role = discord.utils.get(guild.roles, name='YOUR_ROLE_NAME')
+        role = discord.utils.get(guild.roles, name='Hollow')
 
         if role is None:
             print("Role not found.")
