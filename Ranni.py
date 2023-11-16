@@ -80,6 +80,27 @@ async def on_raw_reaction_add(payload):
         else:
             print("Role added successfully.")
 
+@bot.command(name='poll')
+async def poll(ctx, question, *options: str):
+    if len(options) > 20:
+        await ctx.send("You can only have a maximum of 20 options.")
+        return
+
+    if len(options) < 2:
+        await ctx.send("You need at least 2 options to create a poll.")
+        return
+
+    emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', 
+              '🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯']
+
+    description = []
+    for x, option in enumerate(options):
+        description += '\n {} {}'.format(emojis[x], option)
+    embed = discord.Embed(title=question, description=''.join(description))
+    react_message = await ctx.send(embed=embed)
+
+    for emoji in emojis[:len(options)]:
+        await react_message.add_reaction(emoji)
 
 @bot.event
 async def on_message(message):
