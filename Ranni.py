@@ -49,14 +49,29 @@ async def on_member_join(member):
 @bot.event
 async def on_raw_reaction_add(payload):
     print("Reaction added!")
-    channel = await bot.fetch_channel(payload.channel_id)
-    message = await channel.fetch_message(payload.message_id)
-
     if payload.channel_id == 1050711007741358110 and payload.message_id == 1173646740818231337 and payload.emoji.name == '✅':
         guild = bot.get_guild(payload.guild_id)
-        role = discord.utils.get(guild.roles, name='Hollow')
+        role = discord.utils.get(guild.roles, name='YOUR_ROLE_NAME')
+
+        if role is None:
+            print("Role not found.")
+            return
+
         member = guild.get_member(payload.user_id)
-        await member.add_roles(role)
+
+        if member is None:
+            print("Member not found.")
+            return
+
+        try:
+            await member.add_roles(role)
+        except discord.Forbidden:
+            print("Missing permissions to add role.")
+        except discord.HTTPException:
+            print("An error occurred while adding the role.")
+        else:
+            print("Role added successfully.")
+
 
 @bot.event
 async def on_message(message):
