@@ -43,8 +43,11 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    welcome_channel = bot.get_channel(1050711007741358110)  # Replace YOUR_CHANNEL_ID with the ID of the channel where you want to send welcome messages
-    await welcome_channel.send(f"Welcome {member.mention} to the server!")
+    welcome_channel = bot.get_channel(1050711007741358110)  # Replace with your actual channel ID
+    if welcome_channel is not None:
+        await welcome_channel.send(f"Welcome {member.mention} to the server!")
+    else:
+        print("Welcome channel not found.")
 
 @bot.event
 async def on_raw_reaction_add(payload):
