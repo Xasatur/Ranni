@@ -140,9 +140,9 @@ async def on_message(message):
             await message.channel.send(ai_response)
         else:
             print("Error:", response.get("error"))
-
-
-
+    
+    # This line is crucial for commands to be processed
+    await bot.process_commands(message)
 
 if __name__ == '__main__':
     # Start bot
