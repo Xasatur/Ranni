@@ -14,6 +14,7 @@ def load_bot_personality(file_path):
 intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
+intents.members = True  # Enabling the GUILD_MEMBERS intent
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
@@ -43,6 +44,7 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
+    print(f"{member.name} has joined the server.")  # Debug print
     welcome_channel = bot.get_channel(1050711007741358110)  # Replace with your actual channel ID
     if welcome_channel is not None:
         await welcome_channel.send(f"Welcome {member.mention} to the server!")
