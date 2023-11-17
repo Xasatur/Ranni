@@ -45,15 +45,15 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
     print(f"{member.name} has joined the server.")  # Debug print
-    welcome_channel = bot.get_channel(1050711007741358110)  # Replace with your actual channel ID
+    welcome_channel = bot.get_channel(841775840089473056)  # Replace with your actual channel ID
     if welcome_channel is not None:
         embed = discord.Embed(
             title="Herzlich Willkommen auf Hunter's Dream Community!",
             description=f"Hey {member.mention}, willkommen! Wir hoffen, du findest dich gut zurecht. \n\n"
                         "Vergiss nicht, die Regeln im #regeln Kanal zu lesen und akzeptieren. \n"
-                        "Wenn du Fragen hast, zögere nicht, das Team zu kontaktieren. \n"
+                        "Wenn du Fragen hast, zögere nicht, das Team oder mich zu kontaktieren. \n"
                         "Viel Spaß!",
-            color=0x00ff00  # You can change this to any color you like
+            color=0x800080  # You can change this to any color you like
         )
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_author(name=member.name, icon_url=member.avatar_url)
@@ -65,7 +65,7 @@ async def on_member_join(member):
 @bot.event
 async def on_raw_reaction_add(payload):
     print("Reaction added!")
-    if payload.channel_id == 1050711007741358110 and payload.message_id == 1173646740818231337 and payload.emoji.name == '✅':
+    if payload.channel_id == 843015545099649067 and payload.message_id == 914245852497870879 and payload.emoji.name == '✅':
         guild = bot.get_guild(payload.guild_id)
         role = discord.utils.get(guild.roles, name='Hollow')
 
