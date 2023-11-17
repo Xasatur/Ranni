@@ -57,7 +57,7 @@ async def on_member_join(member):
         )
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_author(name=member.name, icon_url=member.avatar_url)
-        embed.set_footer(text="Hunter's Dream Community", icon_url="URL_TO_YOUR_SERVER_ICON")
+        embed.set_footer(text="Hunter's Dream Community")
         await welcome_channel.send(embed=embed)
     else:
         print("Welcome channel not found.")
