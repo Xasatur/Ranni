@@ -47,7 +47,7 @@ async def on_member_join(member):
     print(f"{member.name} has joined the server.")  # Debug print
     welcome_channel = bot.get_channel(1050711007741358110)  # Replace with your actual channel ID
     if welcome_channel is not None:
-        await welcome_channel.send(f"```Hey {member.mention}, herzlich willkommen auf 𝐇𝐮𝐧𝐭𝐞𝐫'𝐬 𝐃𝐫𝐞𝐚𝐦 𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲!
+        await welcome_channel.send("```Hey {member.mention}, herzlich willkommen auf 𝐇𝐮𝐧𝐭𝐞𝐫'𝐬 𝐃𝐫𝐞𝐚𝐦 𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲!
 Regeln
 Bitte akzeptiere unter #rules unsere Serverregeln, damit du den Server nutzen kannst!
 Rules
