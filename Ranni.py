@@ -47,9 +47,18 @@ async def on_member_join(member):
     print(f"{member.name} has joined the server.")  # Debug print
     welcome_channel = bot.get_channel(1050711007741358110)  # Replace with your actual channel ID
     if welcome_channel is not None:
-        await welcome_channel.send("Hey {member.mention} , herzlich willkommen auf 𝐇𝐮𝐧𝐭𝐞𝐫'𝐬 𝐃𝐫𝐞𝐚𝐦 𝐂𝐨𝐦𝐦𝐮𝐧𝐢𝐭𝐲! 
-        Regeln 
-        Bitte akzeptiere unter #rules unsere Serverregeln, damit du den Server nutzen kannst! Rules:flame56:Please accept our server rules under #rules so that you can use the server!")
+        embed = discord.Embed(
+            title="Herzlich Willkommen auf Hunter's Dream Community!",
+            description=f"Hey {member.mention}, willkommen! Wir hoffen, du findest dich gut zurecht. \n\n"
+                        "Vergiss nicht, die Regeln im #regeln Kanal zu lesen und akzeptieren. \n"
+                        "Wenn du Fragen hast, zögere nicht, das Team zu kontaktieren. \n"
+                        "Viel Spaß!",
+            color=0x00ff00  # You can change this to any color you like
+        )
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_footer(text="Hunter's Dream Community", icon_url="URL_TO_YOUR_SERVER_ICON")
+        await welcome_channel.send(embed=embed)
     else:
         print("Welcome channel not found.")
 
