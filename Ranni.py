@@ -157,7 +157,7 @@ async def on_message(message):
             mentioned = True
             break
 
-    keywords = ["Rannibot", "ranni", "Ranni"]  # Add more keywords as needed
+    keywords = ["Rannibot", "ranni", "Ranni", "praise the sun", "One Piece" ]  # Add more keywords as needed
 
     if mentioned or any(keyword in message.content.lower() for keyword in keywords):
         # Bot is mentioned or the message contains one of the keywords
