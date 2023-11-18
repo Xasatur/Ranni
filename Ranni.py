@@ -3,6 +3,8 @@ import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from discord.ext import tasks
+from datetime import datetime, time, timedelta
 import requests
 import openai
 
@@ -20,6 +22,37 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=inten
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+@bot.event
+async def on_ready():
+    print(f"{bot.user.name} has connected to Discord!")
+    send_good_morning.start()  # Start the good morning message loop
+
+async def generate_good_morning_message():
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt="Write a creative good morning message for a Discord community.",
+        max_tokens=50
+    )
+    return response.choices[0].text.strip()
+
+@tasks.loop(hours=24)
+async def send_good_morning():
+    now = datetime.now()
+    target_time = time(hour=7, minute=0)  # Set the target time as 7 AM
+    if now.time() > target_time:  # If it's already past 7 AM, wait until the next day
+        tomorrow = now + timedelta(days=1)
+        target_datetime = datetime.combine(tomorrow.date(), target_time)
+    else:
+        target_datetime = datetime.combine(now.date(), target_time)
+    
+    wait_seconds = (target_datetime - now).total_seconds()
+    await asyncio.sleep(wait_seconds)  # Wait until 7 AM
+    
+    message = await generate_good_morning_message()
+    channel = bot.get_channel(842847835803615292)
+    if channel:
+        await channel.send(message)
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
