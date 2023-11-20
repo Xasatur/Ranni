@@ -7,11 +7,17 @@ from discord.ext import tasks
 from datetime import datetime, time, timedelta
 import requests
 import openai
+import requests
+from requests.auth import HTTPBasicAuth
+
 
 def load_bot_personality(file_path):
     with open(file_path, 'r') as f:
         personality = f.read()
     return personality
+    
+twitch_client_id = os.getenv('TWITCH_CLIENT_ID')
+twitch_client_secret = os.getenv('TWITCH_CLIENT_SECRET')
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -23,10 +29,22 @@ bot_personality = load_bot_personality("ranni personality.txt")  # Update this w
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+def get_twitch_token(client_id, client_secret):
+    url = 'https://id.twitch.tv/oauth2/token'
+    body = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'client_credentials'
+    }
+    response = requests.post(url, data=body)
+    return response.json().get('access_token')
+
+
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
-    send_good_morning.start()  # Start the good morning message loop
+    send_good_morning.start()
+    check_twitch_streams.start()
 
 async def generate_good_morning_message():
     response = openai.Completion.create(
@@ -35,6 +53,24 @@ async def generate_good_morning_message():
         max_tokens=50
     )
     return response.choices[0].text.strip()
+
+twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
+
+@tasks.loop(minutes=5)
+async def check_twitch_streams():
+    global twitch_token
+    headers = {'Client-ID': twitch_client_id, 'Authorization': f'Bearer {twitch_token}'}
+    
+    # List of Twitch usernames to monitor
+    twitch_users = ['jj_da_silva_', 'user2']  
+
+    for user in twitch_users:
+        response = requests.get(f'https://api.twitch.tv/helix/streams?user_login={user}', headers=headers)
+        data = response.json()
+
+        if data['data']:  # If the user is currently streaming
+            channel = bot.get_channel(842884135978926120)
+            await channel.send(f"{user} is now live on Twitch! https://twitch.tv/{user}")
 
 @tasks.loop(hours=24)
 async def send_good_morning():
