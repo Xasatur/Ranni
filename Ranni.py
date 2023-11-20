@@ -62,7 +62,7 @@ async def check_twitch_streams():
     headers = {'Client-ID': twitch_client_id, 'Authorization': f'Bearer {twitch_token}'}
     
     # List of Twitch usernames to monitor
-    twitch_users = ['jj_da_silva_', 'user2']  
+    twitch_users = ['jj_da_silva_', 'Kamaloya_']  
 
     for user in twitch_users:
         response = requests.get(f'https://api.twitch.tv/helix/streams?user_login={user}', headers=headers)
