@@ -27,6 +27,8 @@ intents.members = True  # Enabling the GUILD_MEMBERS intent
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
+active_streams = set()
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def get_twitch_token(client_id, client_secret):
@@ -58,19 +60,26 @@ twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
 
 @tasks.loop(minutes=5)
 async def check_twitch_streams():
-    global twitch_token
+    global twitch_token, active_streams
     headers = {'Client-ID': twitch_client_id, 'Authorization': f'Bearer {twitch_token}'}
-    
+
     # List of Twitch usernames to monitor
-    twitch_users = ['jj_da_silva_', 'Kamaloya_']  
+    twitch_users = ['jj_da_silva_', 'Kamaloya_']
 
     for user in twitch_users:
         response = requests.get(f'https://api.twitch.tv/helix/streams?user_login={user}', headers=headers)
         data = response.json()
 
         if data['data']:  # If the user is currently streaming
-            channel = bot.get_channel(842884135978926120)
-            await channel.send(f"{user} is now live on Twitch! https://twitch.tv/{user}")
+            if user not in active_streams:
+                # Stream just went live, send notification
+                channel = bot.get_channel(842884135978926120)
+                await channel.send(f"{user} is now live on Twitch! https://twitch.tv/{user}")
+                active_streams.add(user)
+        else:
+            # Stream is offline, remove from active streams
+            active_streams.discard(user)
+
 
 @tasks.loop(hours=24)
 async def send_good_morning():
