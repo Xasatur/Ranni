@@ -108,10 +108,6 @@ async def unban(ctx, user: discord.User):
     await ctx.send(f"{user.name} is not currently banned.")
 
 @bot.event
-async def on_ready():
-    print(f"{bot.user.name} has connected to Discord!")
-
-@bot.event
 async def on_member_join(member):
     print(f"{member.name} has joined the server.")  # Debug print
     welcome_channel = bot.get_channel(841775840089473056)  # Replace with your actual channel ID
