@@ -193,20 +193,20 @@ async def jojo(ctx):
         title="The Good Hunter",
         url="http://twitch.tv/XanRobins",
         description="Follow me on Twitch 💜",
-        color=0x1ABC9C  # This sets the color of the embed to a teal color similar to the example
+        color=0x800080  # This sets the color of the embed to a teal color similar to the example
     )
 
     # Set the author's name and icon to that of the streamer
     embed.set_author(name="XanRobins", icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
 
     # Set the thumbnail to the server's logo
-    embed.set_thumbnail(url="https://imgur.com/a/J1iFR8a")
+    embed.set_thumbnail(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png")
 
     # Set the main image to the streamer's promotional picture
     embed.set_image(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
 
     # Set the footer to your server's name and icon
-    embed.set_footer(text="Hunter's Dream", icon_url="https://imgur.com/a/J1iFR8a")
+    embed.set_footer(text="Hunter's Dream", icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png")
 
     await ctx.send(embed=embed)
 
