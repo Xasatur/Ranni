@@ -187,6 +187,11 @@ async def poll(ctx, question, *options: str):
     for emoji in emojis[:len(options)]:
         await react_message.add_reaction(emoji)
 
+@bot.command(name='jojo')
+async def jojo(ctx):
+    await ctx.send("Follow me on Twitch 💜 https://twitch.tv/XanRobins")
+
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
