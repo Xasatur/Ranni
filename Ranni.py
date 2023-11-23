@@ -192,7 +192,7 @@ async def jojo(ctx):
     embed = discord.Embed(
         title="The Good Hunter",
         url="http://twitch.tv/XanRobins",
-        description="Follow me on Twitch 💜",
+         description="Follow me on Twitch 💜\nhttp://twitch.tv/XanRobins",  # Twitch link added here
         color=0x800080  # This sets the color of the embed to a teal color similar to the example
     )
 
