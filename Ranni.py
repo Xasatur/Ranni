@@ -189,7 +189,27 @@ async def poll(ctx, question, *options: str):
 
 @bot.command(name='jojo')
 async def jojo(ctx):
-    await ctx.send("Follow me on Twitch 💜 https://twitch.tv/XanRobins")
+    embed = discord.Embed(
+        title="The Good Hunter",
+        url="http://twitch.tv/XanRobins",
+        description="Follow me on Twitch 💜",
+        color=0x1ABC9C  # This sets the color of the embed to a teal color similar to the example
+    )
+
+    # Set the author's name and icon to that of the streamer
+    embed.set_author(name="XanRobins", icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
+
+    # Set the thumbnail to the server's logo
+    embed.set_thumbnail(url="https://imgur.com/a/J1iFR8a")
+
+    # Set the main image to the streamer's promotional picture
+    embed.set_image(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
+
+    # Set the footer to your server's name and icon
+    embed.set_footer(text="Hunter's Dream", icon_url="https://imgur.com/a/J1iFR8a")
+
+    await ctx.send(embed=embed)
+
 
 
 @bot.event
