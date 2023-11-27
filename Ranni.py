@@ -166,13 +166,18 @@ async def on_raw_reaction_add(payload):
             print("Role added successfully.")
 
 @bot.command(name='poll')
-async def poll(ctx, question, *options: str):
+async def poll(ctx, *args):
+    args = ' '.join(args)  # Combine all arguments into one string
+    parts = args.split('|')  # Split by the delimiter '|'
+    if len(parts) < 3:
+        await ctx.send("Please use the format: !poll Question | Option 1 | Option 2 | ...")
+        return
+    
+    question = parts[0]
+    options = parts[1:]
+    
     if len(options) > 20:
         await ctx.send("You can only have a maximum of 20 options.")
-        return
-
-    if len(options) < 2:
-        await ctx.send("You need at least 2 options to create a poll.")
         return
 
     emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', 
@@ -180,8 +185,8 @@ async def poll(ctx, question, *options: str):
 
     description = []
     for x, option in enumerate(options):
-        description += '\n {} {}'.format(emojis[x], option)
-    embed = discord.Embed(title=question, description=''.join(description))
+        description.append(f'\n{emojis[x]} {option.strip()}')  # strip() removes leading/trailing whitespace
+    embed = discord.Embed(title=question.strip(), description=''.join(description))
     react_message = await ctx.send(embed=embed)
 
     for emoji in emojis[:len(options)]:
