@@ -48,7 +48,7 @@ async def on_ready():
     send_good_morning.start()
     check_twitch_streams.start()
 
-async def generate_good_morning_message(():
+async def generate_good_morning_message():
     # Randomly select the type of content for variety
     content_options = [
         "a short Christmas story",
