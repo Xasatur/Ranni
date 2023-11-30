@@ -8,8 +8,8 @@ from datetime import datetime, time, timedelta
 import requests
 import openai
 import requests
+import random
 from requests.auth import HTTPBasicAuth
-
 
 def load_bot_personality(file_path):
     with open(file_path, 'r') as f:
@@ -48,13 +48,23 @@ async def on_ready():
     send_good_morning.start()
     check_twitch_streams.start()
 
-async def generate_good_morning_message():
+async def generate_good_morning_message(():
+    # Randomly select the type of content for variety
+    content_options = [
+        "a short Christmas story",
+        "a Christmas poem",
+        "a Christmas song",
+        "a Christmas legend"
+    ]
+    selected_content = random.choice(content_options)
+    
     response = openai.Completion.create(
         model="text-davinci-003",
-        prompt="Write a creative good morning message for a Discord community.",
-        max_tokens=50
+        prompt=f"Write {selected_content} for a Discord community to enjoy in the morning.",
+        max_tokens=150  # Increase max_tokens for potentially longer content
     )
     return response.choices[0].text.strip()
+
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
 
