@@ -108,15 +108,14 @@ async def generate_image_with_dalle(prompt):
         'response_format': 'url'  # Format of the response
     }
 
-    # Make the API request
+# Make the API request
     response = requests.post(url, json=payload, headers=headers)
 
     # Handle the response
     if response.status_code == 200:
         data = response.json()
-        # Extract the URL from the response
         if 'data' in data and len(data['data']) > 0:
-            image_url = data['data'][0].get('url')  # Get the URL of the first image
+            image_url = data['data'][0].get('url')  # Corrected way to access the URL
             return image_url
         else:
             print("No image data found in the response.")
@@ -124,7 +123,6 @@ async def generate_image_with_dalle(prompt):
     else:
         print(f"Failed to generate image: {response.content}")
         return None
-
 
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
