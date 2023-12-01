@@ -31,7 +31,7 @@ active_streams = set()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-meme_keywords = ['Mococo meme', 'Fuwawa Meme', 'gaming humor', 'fantasy meme', 'anime meme', 'Dark souls meme', 'Elden Ring meme']
+meme_keywords = ['Mococo meme', 'Fuwawa Meme', 'anime meme', 'Dark souls meme', 'Elden Ring meme']
 
 def get_twitch_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
