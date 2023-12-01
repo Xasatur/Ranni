@@ -90,6 +90,7 @@ daily_meme_post.start()
 
 
 async def generate_image_with_dalle(prompt):
+    print(f"Generating image with prompt: {prompt}")  # Add this line to print the prompt
     dalle_api_key = os.getenv('DALLE_API_KEY')
     
     # API endpoint for DALL-E image generation
