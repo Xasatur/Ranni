@@ -93,7 +93,7 @@ async def generate_image_with_dalle(prompt):
     dalle_api_key = os.getenv('DALLE_API_KEY')
     
     # API endpoint for DALL-E image generation
-    url = 'https://api.openai.com/v1/dalle/generate'
+    url = 'https://api.openai.com/v1/images/generations'
     
     headers = {
         'Authorization': f'Bearer {dalle_api_key}',
