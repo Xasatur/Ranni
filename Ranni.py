@@ -103,6 +103,9 @@ async def generate_image_with_dalle(prompt):
     # Payload with the prompt for DALL-E
     payload = {
         'prompt': prompt,
+        'model': 'dall-e-2',  # or 'dall-e-3' as per your requirement
+        'n': 1,  # Number of images to generate
+        'response_format': 'url'  # Format of the response
     }
 
     # Make the API request
@@ -111,12 +114,17 @@ async def generate_image_with_dalle(prompt):
     # Handle the response
     if response.status_code == 200:
         data = response.json()
-        # Assuming the response contains a URL to the image
-        image_url = data['images'][0]  # Adjust based on the actual response structure
-        return image_url
+        # Extract the URL from the response
+        if 'data' in data and len(data['data']) > 0:
+            image_url = data['data'][0].get('url')  # Get the URL of the first image
+            return image_url
+        else:
+            print("No image data found in the response.")
+            return None
     else:
         print(f"Failed to generate image: {response.content}")
         return None
+
 
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
