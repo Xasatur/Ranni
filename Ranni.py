@@ -103,7 +103,6 @@ async def generate_image_with_dalle(prompt):
     # Payload with the prompt for DALL-E
     payload = {
         'prompt': prompt,
-        'num_outputs': 1  # You can adjust the number of images generated
     }
 
     # Make the API request
@@ -118,7 +117,6 @@ async def generate_image_with_dalle(prompt):
     else:
         print(f"Failed to generate image: {response.content}")
         return None
-
 
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
