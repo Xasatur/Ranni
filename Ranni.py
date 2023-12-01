@@ -31,6 +31,8 @@ active_streams = set()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+meme_keywords = ['funny cat meme', 'space joke', 'gaming humor', 'fantasy meme', 'sci-fi parody']
+
 def get_twitch_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
     body = {
@@ -64,6 +66,59 @@ async def generate_good_morning_message():
         max_tokens=150  # Increase max_tokens for potentially longer content
     )
     return response.choices[0].text.strip()
+
+
+@tasks.loop(hours=24)
+async def daily_meme_post():
+    # Randomly select a meme keyword
+    meme_prompt = random.choice(meme_keywords)
+    
+    # Generate an image using DALL-E (simplified example)
+    # Assuming you have a function to handle DALL-E API requests
+    image_url = await generate_image_with_dalle(meme_prompt)
+    
+    # Post the image in the meme channel
+    meme_channel = bot.get_channel(1129781956268265612)
+    if meme_channel:
+        await meme_channel.send(image_url)  # Adjust based on how you receive the image
+
+@daily_meme_post.before_loop
+async def before_daily_meme_post():
+    await bot.wait_until_ready()
+
+daily_meme_post.start()
+
+
+async def generate_image_with_dalle(prompt):
+    dalle_api_key = os.getenv('DALLE_API_KEY')
+    
+    # API endpoint for DALL-E image generation
+    url = 'https://api.openai.com/v1'
+    
+    headers = {
+        'Authorization': f'Bearer {dalle_api_key}',
+        'Content-Type': 'application/json'
+    }
+
+    # Payload with the prompt for DALL-E
+    payload = {
+        'prompt': prompt,
+        'num_outputs': 1  # You can adjust the number of images generated
+    }
+
+    # Make the API request
+    response = requests.post(url, json=payload, headers=headers)
+
+    # Handle the response
+    if response.status_code == 200:
+        data = response.json()
+        # Assuming the response contains a URL to the image
+        image_url = data['images'][0]  # Adjust based on the actual response structure
+        return image_url
+    else:
+        print(f"Failed to generate image: {response.content}")
+        return None
+
 
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
