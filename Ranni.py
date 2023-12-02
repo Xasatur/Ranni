@@ -125,6 +125,36 @@ async def generate_image_with_dalle(prompt):
         print(f"Failed to generate image: {response.content}")
         return None
 
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Define trigger phrases for image generation
+    trigger_phrases = ["show me a picture of", "I wonder what a", "image of"]
+
+    # Check if the message contains any trigger phrase
+    prompt = None
+    for phrase in trigger_phrases:
+        if phrase in message.content.lower():
+            prompt = message.content.lower().split(phrase, 1)[1].strip()
+            break
+
+    # If a prompt is found, generate an image and a short answer
+    if prompt:
+        image_url = await generate_image_with_dalle(prompt)
+        short_answer = await generate_short_answer(prompt)
+        await message.channel.send(short_answer)
+        await message.channel.send(image_url)
+    else:
+        # Existing functionality for responding to other keywords or mentions
+        mentioned = any(mention.id == bot.user.id for mention in message.mentions)
+        keywords = ["Rannibot", "ranni", "Ranni", "praise the sun", "One Piece"]
+        if mentioned or any(keyword in message.content.lower() for keyword in keywords):
+            ai_response = await generate_response(message.content)
+            await message.channel.send(ai_response)
+
+    await bot.process_commands(message)
 
 twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
 
