@@ -143,9 +143,12 @@ async def on_message(message):
     # If a prompt is found, generate an image and a short answer
     if prompt:
         image_url = await generate_image_with_dalle(prompt)
-        short_answer = await generate_short_answer(prompt)
-        await message.channel.send(short_answer)
-        await message.channel.send(image_url)
+        short_answer = await generate_short_answer(prompt)  # Assuming this function generates a text response
+
+        # Create an embed for the image
+        embed = discord.Embed(description=short_answer)
+        embed.set_image(url=image_url)  # Set the image URL here
+        await message.channel.send(embed=embed)
     else:
         # Existing functionality for responding to other keywords or mentions
         mentioned = any(mention.id == bot.user.id for mention in message.mentions)
