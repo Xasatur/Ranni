@@ -53,10 +53,13 @@ async def on_ready():
 async def generate_good_morning_message():
     # Randomly select the type of content for variety
     content_options = [
-        "a short Christmas story",
-        "a Christmas poem",
-        "a Christmas song",
-        "a Christmas legend"
+        "a good morning message on English",
+        "a good morning message on German",
+        "a good morning message on Swiss-German",
+        "an interesting fact or trivia about the Soulsborne game to start off the day"
+        "a good morning message and a question for the day",
+        "a good morning message and a joke",
+        "a good morning message and a short story",
     ]
     selected_content = random.choice(content_options)
     
