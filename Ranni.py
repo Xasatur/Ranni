@@ -31,8 +31,6 @@ active_streams = set()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-meme_keywords = ['Mococo meme', 'Fuwawa Meme', 'anime meme', 'Dark souls meme', 'Elden Ring meme']
-
 def get_twitch_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
     body = {
@@ -70,63 +68,6 @@ async def generate_good_morning_message():
     )
     return response.choices[0].text.strip()
 
-
-@tasks.loop(hours=24)
-async def daily_meme_post():
-    # Randomly select a meme keyword
-    meme_prompt = random.choice(meme_keywords)
-    
-    # Generate an image using DALL-E (simplified example)
-    # Assuming you have a function to handle DALL-E API requests
-    image_url = await generate_image_with_dalle(meme_prompt)
-    
-    # Post the image in the meme channel
-    meme_channel = bot.get_channel(1129781956268265612)
-    if meme_channel:
-        await meme_channel.send(image_url)  # Adjust based on how you receive the image
-
-@daily_meme_post.before_loop
-async def before_daily_meme_post():
-    await bot.wait_until_ready()
-
-daily_meme_post.start()
-
-
-async def generate_image_with_dalle(prompt):
-    print(f"Generating image with prompt: {prompt}")  # Add this line to print the prompt
-    dalle_api_key = os.getenv('DALLE_API_KEY')
-    
-    # API endpoint for DALL-E image generation
-    url = 'https://api.openai.com/v1/images/generations'
-    
-    headers = {
-        'Authorization': f'Bearer {dalle_api_key}',
-        'Content-Type': 'application/json'
-    }
-
-    # Payload with the prompt for DALL-E
-    payload = {
-        'prompt': prompt,
-        'model': 'dall-e-2',  # or 'dall-e-3' as per your requirement
-        'n': 1,  # Number of images to generate
-        'response_format': 'url'  # Format of the response
-    }
-
-# Make the API request
-    response = requests.post(url, json=payload, headers=headers)
-
-    # Handle the response
-    if response.status_code == 200:
-        data = response.json()
-        if 'data' in data and len(data['data']) > 0:
-            image_url = data['data'][0].get('url')  # Corrected way to access the URL
-            return image_url
-        else:
-            print("No image data found in the response.")
-            return None
-    else:
-        print(f"Failed to generate image: {response.content}")
-        return None
 
 @bot.event
 async def on_message(message):
@@ -320,7 +261,6 @@ async def jojo(ctx):
     embed.set_footer(text="Hunter's Dream", icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png")
 
     await ctx.send(embed=embed)
-
 
 
 @bot.event
