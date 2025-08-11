@@ -1,15 +1,13 @@
-import os
 import asyncio
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
-from discord.ext import tasks
 from datetime import datetime, time, timedelta
-import requests
+import os
+import random
+
+import discord
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
 import openai
 import requests
-import random
-from requests.auth import HTTPBasicAuth
 
 load_dotenv()
 
