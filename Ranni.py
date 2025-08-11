@@ -11,13 +11,16 @@ import requests
 import random
 from requests.auth import HTTPBasicAuth
 
+load_dotenv()
+
 def load_bot_personality(file_path):
     with open(file_path, 'r') as f:
         personality = f.read()
     return personality
-    
+
 twitch_client_id = os.getenv('TWITCH_CLIENT_ID')
 twitch_client_secret = os.getenv('TWITCH_CLIENT_SECRET')
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -28,8 +31,6 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=inten
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 active_streams = set()
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def get_twitch_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
