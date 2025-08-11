@@ -53,7 +53,7 @@ async def generate_good_morning_message():
         "a good morning message on English",
         "a good morning message on German",
         "a good morning message on Swiss-German",
-        "an interesting fact or trivia about the Soulsborne game to start off the day"
+        "an interesting fact or trivia about the Soulsborne game to start off the day",
         "a good morning message and a question for the day",
         "a good morning message and a joke",
         "a good morning message and a short story",
