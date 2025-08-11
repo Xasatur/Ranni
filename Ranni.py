@@ -41,6 +41,48 @@ def get_twitch_token(client_id, client_secret):
     return response.json().get('access_token')
 
 
+async def generate_image_with_dalle(prompt: str) -> str:
+    """Generate an image using OpenAI's DALL-E API and return the image URL.
+
+    If the API request fails, a placeholder image URL is returned so the caller
+    always receives a usable string.
+    """
+    try:
+        response = await asyncio.to_thread(
+            openai.Image.create,
+            prompt=prompt,
+            n=1,
+            size="512x512",
+        )
+        return response["data"][0]["url"]
+    except Exception as e:
+        print(f"Error generating image: {e}")
+        return "https://via.placeholder.com/512?text=Image+Unavailable"
+
+
+async def generate_short_answer(prompt: str) -> str:
+    """Generate a short textual answer using OpenAI's ChatCompletion API.
+
+    On API failure, a fallback message is returned to keep interactions
+    graceful.
+    """
+    try:
+        response = await asyncio.to_thread(
+            openai.ChatCompletion.create,
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": bot_personality},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=60,
+            temperature=0.7,
+        )
+        return response["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"Error generating short answer: {e}")
+        return "I'm not sure how to respond to that."
+
+
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
