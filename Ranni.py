@@ -97,8 +97,33 @@ async def on_message(message):
         mentioned = any(mention.id == bot.user.id for mention in message.mentions)
         keywords = ["Rannibot", "ranni", "Ranni", "praise the sun", "One Piece"]
         if mentioned or any(keyword in message.content.lower() for keyword in keywords):
-            ai_response = await generate_response(message.content)
-            await message.channel.send(ai_response)
+            await bot.wait_until_ready()
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    {"role": "system", "content": bot_personality},
+                    {"role": "user", "content": message.content},
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.7,
+            }
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {openai.api_key}",
+            }
+
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=data,
+            ).json()
+
+            if 'choices' in response:
+                ai_response = response["choices"][0]["message"]["content"].strip()[:2000]  # Truncate to 2000 characters
+                await message.channel.send(ai_response)
+            else:
+                print("Error:", response.get("error"))
 
     await bot.process_commands(message)
 
@@ -261,48 +286,6 @@ async def jojo(ctx):
 
     await ctx.send(embed=embed)
 
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    mentioned = False
-    for mention in message.mentions:
-        if mention.id == bot.user.id:
-            mentioned = True
-            break
-
-    keywords = ["Rannibot", "ranni", "Ranni", "praise the sun", "One Piece" ]  # Add more keywords as needed
-
-    if mentioned or any(keyword in message.content.lower() for keyword in keywords):
-        # Bot is mentioned or the message contains one of the keywords
-        await bot.wait_until_ready()
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "system", "content": bot_personality},
-                {"role": "user", "content": message.content},
-            ],
-            "max_tokens": 1000,
-            "temperature": 0.7,
-        }
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {openai.api_key}",
-        }
-
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data).json()
-
-        if 'choices' in response:
-            ai_response = response["choices"][0]["message"]["content"].strip()[:2000]  # Truncate to 2000 characters
-            await message.channel.send(ai_response)
-        else:
-            print("Error:", response.get("error"))
-    
-    # This line is crucial for commands to be processed
-    await bot.process_commands(message)
 
 if __name__ == '__main__':
     # Start bot
