@@ -175,8 +175,8 @@ async def on_member_join(member):
                         "Viel Spaß!",
             color=0x800080  # You can change this to any color you like
         )
-        embed.set_thumbnail(url=member.avatar_url)
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
         embed.set_footer(text="Hunter's Dream Community")
         await welcome_channel.send(embed=embed)
     else:
