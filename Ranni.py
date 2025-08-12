@@ -24,7 +24,6 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.members = True  # Enabling the GUILD_MEMBERS intent
-intents.message_content = True
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
@@ -116,14 +115,17 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    # Work with a lowercase copy of the message content for case-insensitive checks
+    message_content = message.content.lower()
+
     # Define trigger phrases for image generation
-    trigger_phrases = ["show me a picture of", "I wonder what a", "image of"]
+    trigger_phrases = ["show me a picture of", "i wonder what a", "image of"]
 
     # Check if the message contains any trigger phrase
     prompt = None
     for phrase in trigger_phrases:
-        if phrase in message.content.lower():
-            prompt = message.content.lower().split(phrase, 1)[1].strip()
+        if phrase in message_content:
+            prompt = message_content.split(phrase, 1)[1].strip()
             break
 
     # If a prompt is found, generate an image and a short answer
@@ -138,8 +140,8 @@ async def on_message(message):
     else:
         # Existing functionality for responding to other keywords or mentions
         mentioned = any(mention.id == bot.user.id for mention in message.mentions)
-        keywords = ["Rannibot", "ranni", "Ranni", "praise the sun", "One Piece"]
-        if mentioned or any(keyword in message.content.lower() for keyword in keywords):
+        keywords = ["rannibot", "ranni", "praise the sun", "one piece"]
+        if mentioned or any(keyword in message_content for keyword in keywords):
             await bot.wait_until_ready()
             data = {
                 "model": "gpt-3.5-turbo",
