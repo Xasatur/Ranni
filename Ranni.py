@@ -190,7 +190,7 @@ async def check_twitch_streams():
             if user not in active_streams:
                 # Stream just went live, send notification
                 channel = bot.get_channel(842884135978926120)
-                await channel.send(f"{user} is now live on Twitch! https://twitch.tv/{user}")
+                await channel.send(f"@all {user} is now live on Twitch! https://twitch.tv/{user}")
                 active_streams.add(user)
         else:
             # Stream is offline, remove from active streams
@@ -327,6 +327,7 @@ async def jojo(ctx):
     embed.set_image(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
 
     # Set the footer to your server's name and icon
+
     embed.set_footer(text="Hunter's Dream", icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png")
 
     await ctx.send(embed=embed)
