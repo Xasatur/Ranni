@@ -13,6 +13,37 @@ import requests
 
 load_dotenv()
 
+
+def resolve_text_channel(argument: str, guild: discord.Guild | None) -> discord.TextChannel | None:
+    """Resolve a user-supplied channel identifier into a TextChannel instance."""
+
+    if not guild or not argument:
+        return None
+
+    channel_id: int | None = None
+
+    if argument.startswith("<#") and argument.endswith(">"):
+        possible_id = argument[2:-1]
+        if possible_id.isdigit():
+            channel_id = int(possible_id)
+    elif argument.isdigit():
+        channel_id = int(argument)
+
+    channel: discord.abc.GuildChannel | None = None
+
+    if channel_id is not None:
+        channel = guild.get_channel(channel_id)
+    else:
+        lowered = argument.lower()
+        for candidate in guild.text_channels:
+            if candidate.name.lower() == lowered:
+                channel = candidate
+                break
+
+    if isinstance(channel, discord.TextChannel):
+        return channel
+    return None
+
 def load_bot_personality(file_path):
     with open(file_path, 'r') as f:
         personality = f.read()
@@ -243,93 +274,104 @@ async def handle_npc_message(message: discord.Message, session: NPCSession) -> b
     return True
 
 
-class NPCChannelSelect(discord.ui.Select):
-    def __init__(self, channels: list[discord.TextChannel]):
-        options = [
-            discord.SelectOption(label=channel.name, value=str(channel.id))
-            for channel in channels
-        ]
-        super().__init__(placeholder="Select a channel", options=options, min_values=1, max_values=1)
+DISCORD_UI_AVAILABLE = hasattr(discord, "ui") and hasattr(discord, "SelectOption")
 
-    async def callback(self, interaction: discord.Interaction):
-        self.view.selected_channel_id = int(self.values[0])
-        await interaction.response.defer()
+if DISCORD_UI_AVAILABLE:
 
-
-class NPCPersonalitySelect(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(
-                label=data["label"],
-                value=key,
-                description=data["description"][:100],
+    class NPCChannelSelect(discord.ui.Select):
+        def __init__(self, channels: list[discord.TextChannel]):
+            options = [
+                discord.SelectOption(label=channel.name, value=str(channel.id))
+                for channel in channels
+            ]
+            super().__init__(
+                placeholder="Select a channel", options=options, min_values=1, max_values=1
             )
-            for key, data in NPC_PERSONALITIES.items()
-        ]
-        super().__init__(
-            placeholder="Choose an NPC persona",
-            options=options,
-            min_values=1,
-            max_values=1,
-        )
 
-    async def callback(self, interaction: discord.Interaction):
-        self.view.selected_personality_key = self.values[0]
-        await interaction.response.defer()
+        async def callback(self, interaction: discord.Interaction):
+            self.view.selected_channel_id = int(self.values[0])
+            await interaction.response.defer()
 
 
-class NPCResponseModeSelect(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="Static pre-written dialogue", value="static"),
-            discord.SelectOption(label="Dynamic OpenAI dialogue", value="openai"),
-        ]
-        super().__init__(
-            placeholder="How should the NPC respond?",
-            options=options,
-            min_values=1,
-            max_values=1,
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        self.view.selected_mode = self.values[0]
-        await interaction.response.defer()
-
-
-class NPCInteractionView(discord.ui.View):
-    def __init__(self, requester: discord.User, channels: list[discord.TextChannel]):
-        super().__init__(timeout=180)
-        self.requester = requester
-        self.selected_channel_id: int | None = None
-        self.selected_personality_key: str | None = None
-        self.selected_mode: str = "static"
-        self.add_item(NPCChannelSelect(channels))
-        self.add_item(NPCPersonalitySelect())
-        self.add_item(NPCResponseModeSelect())
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return interaction.user.id == self.requester.id
-
-    @discord.ui.button(label="Start NPC Scene", style=discord.ButtonStyle.primary)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.selected_channel_id or not self.selected_personality_key:
-            await interaction.response.send_message(
-                "Please select both a channel and an NPC personality before starting.",
-                ephemeral=False,
+    class NPCPersonalitySelect(discord.ui.Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(
+                    label=data["label"],
+                    value=key,
+                    description=data["description"][:100],
+                )
+                for key, data in NPC_PERSONALITIES.items()
+            ]
+            super().__init__(
+                placeholder="Choose an NPC persona",
+                options=options,
+                min_values=1,
+                max_values=1,
             )
-            return
 
-        channel = bot.get_channel(self.selected_channel_id)
-        if not isinstance(channel, discord.TextChannel):
-            await interaction.response.send_message(
-                "I couldn't access that channel. Please try again.", ephemeral=False
+        async def callback(self, interaction: discord.Interaction):
+            self.view.selected_personality_key = self.values[0]
+            await interaction.response.defer()
+
+
+    class NPCResponseModeSelect(discord.ui.Select):
+        def __init__(self):
+            options = [
+                discord.SelectOption(label="Static pre-written dialogue", value="static"),
+                discord.SelectOption(label="Dynamic OpenAI dialogue", value="openai"),
+            ]
+            super().__init__(
+                placeholder="How should the NPC respond?",
+                options=options,
+                min_values=1,
+                max_values=1,
             )
-            return
 
-        await interaction.response.defer()
-        message = await start_npc_session(channel, self.selected_personality_key, self.selected_mode)
-        await interaction.followup.send(message)
-        self.stop()
+        async def callback(self, interaction: discord.Interaction):
+            self.view.selected_mode = self.values[0]
+            await interaction.response.defer()
+
+
+    class NPCInteractionView(discord.ui.View):
+        def __init__(self, requester: discord.User, channels: list[discord.TextChannel]):
+            super().__init__(timeout=180)
+            self.requester = requester
+            self.selected_channel_id: int | None = None
+            self.selected_personality_key: str | None = None
+            self.selected_mode: str = "static"
+            self.add_item(NPCChannelSelect(channels))
+            self.add_item(NPCPersonalitySelect())
+            self.add_item(NPCResponseModeSelect())
+
+        async def interaction_check(self, interaction: discord.Interaction) -> bool:
+            return interaction.user.id == self.requester.id
+
+        @discord.ui.button(label="Start NPC Scene", style=discord.ButtonStyle.primary)
+        async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+            if not self.selected_channel_id or not self.selected_personality_key:
+                await interaction.response.send_message(
+                    "Please select both a channel and an NPC personality before starting.",
+                    ephemeral=False,
+                )
+                return
+
+            channel = bot.get_channel(self.selected_channel_id)
+            if not isinstance(channel, discord.TextChannel):
+                await interaction.response.send_message(
+                    "I couldn't access that channel. Please try again.", ephemeral=False
+                )
+                return
+
+            await interaction.response.defer()
+            message = await start_npc_session(
+                channel, self.selected_personality_key, self.selected_mode
+            )
+            await interaction.followup.send(message)
+            self.stop()
+
+else:
+    NPCInteractionView = None
 
 
 def get_twitch_token(client_id, client_secret):
@@ -540,6 +582,15 @@ async def npc(ctx: commands.Context):
         await ctx.send("Für dieses Feature sind keine geeigneten Textkanäle freigegeben.")
         return
 
+    if not DISCORD_UI_AVAILABLE or NPCInteractionView is None:
+        personalities = ", ".join(sorted(NPC_PERSONALITIES.keys()))
+        await ctx.send(
+            "Discord UI-Komponenten sind in dieser Bot-Version nicht verfügbar. "
+            "Nutze stattdessen den Befehl `!npc_start <Kanal> <Persönlichkeit> [static|openai]`.\n"
+            f"Verfügbare Persönlichkeiten: {personalities}"
+        )
+        return
+
     if isinstance(ctx.channel, discord.DMChannel):
         destination = ctx.channel
     else:
@@ -555,6 +606,49 @@ async def npc(ctx: commands.Context):
         await destination.send(intro, view=view)
     except discord.Forbidden:
         await ctx.send("Ich kann dir leider keine Direktnachrichten schicken.")
+
+
+@bot.command(name="npc_start")
+async def npc_start(
+    ctx: commands.Context,
+    channel_reference: str | None = None,
+    personality_key: str | None = None,
+    mode: str = "static",
+):
+    if channel_reference is None or personality_key is None:
+        await ctx.send(
+            "Benutzung: `!npc_start <Kanal> <Persönlichkeit> [static|openai]`"
+        )
+        return
+
+    guild = get_target_guild() or ctx.guild
+    if not guild:
+        await ctx.send("Ich konnte keinen Server finden, auf dem ich sprechen darf.")
+        return
+
+    channel = resolve_text_channel(channel_reference, guild)
+    if not channel or channel not in get_available_npc_channels(guild):
+        await ctx.send(
+            "Diesen Kanal kann ich nicht verwenden. Bitte gib einen Textkanal an, "
+            "in dem ich schreiben darf."
+        )
+        return
+
+    personality_key = personality_key.lower()
+    if personality_key not in NPC_PERSONALITIES:
+        personalities = ", ".join(sorted(NPC_PERSONALITIES.keys()))
+        await ctx.send(
+            f"Unbekannte Persönlichkeit `{personality_key}`. Verfügbar: {personalities}"
+        )
+        return
+
+    mode = mode.lower()
+    if mode not in {"static", "openai"}:
+        await ctx.send("Der Modus muss `static` oder `openai` sein.")
+        return
+
+    message = await start_npc_session(channel, personality_key, mode)
+    await ctx.send(message)
 
 
 @bot.command()
