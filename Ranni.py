@@ -26,7 +26,6 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.members = True  # Enabling the GUILD_MEMBERS intent
-intents.message_content = True
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
@@ -73,7 +72,7 @@ NPC_PERSONALITIES = {
         ),
         "static_opening": (
             "'Du… Filius… du kannst mich hören, nicht wahr?'"
-            „'Er hat dich geschickt. Du bist wie ich. Komm näher…'“
+            "'Er hat dich geschickt. Du bist wie ich. Komm näher…'"
         ),
         "static_replies": [
             "Ich will weg'",
