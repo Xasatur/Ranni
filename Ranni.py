@@ -73,7 +73,7 @@ NPC_PERSONALITIES = {
         ),
         "static_opening": (
             "'Du… Filius… du kannst mich hören, nicht wahr?'"
-            „Er hat dich geschickt. Du bist wie ich. Komm näher…“
+            „'Er hat dich geschickt. Du bist wie ich. Komm näher…'“
         ),
         "static_replies": [
             "Ich will weg'",
@@ -679,4 +679,5 @@ async def jojo(ctx):
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
+
 
