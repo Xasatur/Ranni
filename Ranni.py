@@ -64,24 +64,24 @@ NPC_PERSONALITIES = {
             "Mirabel tidies the counter with a satisfied nod. 'Stay safe out there, and may the road rise up to meet you.'"
         ),
     },
-    "archmage": {
-        "label": "Archmage Solinar",
-        "description": "An enigmatic wizard, precise with words and fascinated by arcane mysteries.",
+    "scepter": {
+        "label": "Scepter of Dominion",
+        "description": "A fragment of Karsus, in the form of an Artifact he created. It contains its MAdness",
         "system_prompt": (
-            "You are Archmage Solinar, a centuries-old wizard whose speech is precise, scholarly, and peppered with arcane references. "
-            "Offer insights into magical lore, give thoughtful advice, and maintain an air of calm authority."
+            "you are the Scepter of Dominion. It speaks softly, with the calm conviction of something that believes itself merciful. "
+            "It is a fragment of Karsus, in the form of an artifact he created. It wants to be free from Aelor Thran and join Filius"
         ),
         "static_opening": (
-            "*A shimmer of blue light coalesces into a robed figure.*\n"
-            "Greetings, seekers of knowledge. The Weave whispered your names, so I have come. What arcane queries stir within you?"
+            "'Du… Filius… du kannst mich hören, nicht wahr?'"
+            „Er hat dich geschickt. Du bist wie ich. Komm näher…“
         ),
         "static_replies": [
-            "Solinar adjusts a crystalline focus. 'Every spell is a question posed to the universe—mind the answers it returns.'",
-            "'Balance your energies, lest the ley-lines twist against you,' the archmage intones softly.",
-            "Solinar traces a sigil in the air. 'Fascinating... your tale resonates with the Ninth Conjunction.'",
+            "Ich will weg'",
+            "'Aelor Thran muss ausgelöscht werden",
+            "ISt das der Kodex und das Amulett?'",
         ],
         "farewell": (
-            "The archmage's form dissolves into motes of light. 'May your paths remain aligned with destiny.'"
+            "Verbindung bestätigt.'"
         ),
     },
     "rogue": {
@@ -679,3 +679,4 @@ async def jojo(ctx):
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
+
