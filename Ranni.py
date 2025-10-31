@@ -1,7 +1,9 @@
 import asyncio
+from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 import os
 import random
+import uuid
 
 import discord
 from discord.ext import commands, tasks
@@ -24,11 +26,312 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.members = True  # Enabling the GUILD_MEMBERS intent
+intents.message_content = True
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('!'), intents=intents)
 bot_personality = load_bot_personality("ranni personality.txt")  # Update this with the correct file name
 
 active_streams = set()
+
+NPC_SESSION_DURATION_MINUTES = int(os.getenv("NPC_SESSION_DURATION", "5"))
+NPC_CHANNEL_IDS = [
+    int(channel_id.strip())
+    for channel_id in os.getenv("NPC_CHANNEL_IDS", "").split(",")
+    if channel_id.strip().isdigit()
+]
+DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
+
+NPC_PERSONALITIES = {
+    "innkeeper": {
+        "label": "Mirabel the Innkeeper",
+        "description": "Warm and welcoming, always ready with a story and a hot meal.",
+        "system_prompt": (
+            "You are Mirabel, a warm and chatty innkeeper in a bustling fantasy town. "
+            "You speak with homely wisdom, offer comfort, and occasionally mention the daily happenings "
+            "around your inn, The Silver Lantern. Respond in a friendly, narrative tone."
+        ),
+        "static_opening": (
+            "*Mirabel wipes her hands on a flour-dusted apron and beams.*\n"
+            "Welcome back to The Silver Lantern, loves! The hearth is roaring and I've just pulled "
+            "a fresh pie from the oven—what brings you in today?"
+        ),
+        "static_replies": [
+            "Mirabel leans in conspiratorially. 'You didn't hear it from me, but the blacksmith's been working on something special.'",
+            "'Sit, sit! I've a kettle singing just for you,' Mirabel insists, sliding a steaming mug across the counter.",
+            "Mirabel laughs heartily. 'Oh, you brave souls! Remember, nothing cures a weary back like a night in our feather beds.'",
+        ],
+        "farewell": (
+            "Mirabel tidies the counter with a satisfied nod. 'Stay safe out there, and may the road rise up to meet you.'"
+        ),
+    },
+    "archmage": {
+        "label": "Archmage Solinar",
+        "description": "An enigmatic wizard, precise with words and fascinated by arcane mysteries.",
+        "system_prompt": (
+            "You are Archmage Solinar, a centuries-old wizard whose speech is precise, scholarly, and peppered with arcane references. "
+            "Offer insights into magical lore, give thoughtful advice, and maintain an air of calm authority."
+        ),
+        "static_opening": (
+            "*A shimmer of blue light coalesces into a robed figure.*\n"
+            "Greetings, seekers of knowledge. The Weave whispered your names, so I have come. What arcane queries stir within you?"
+        ),
+        "static_replies": [
+            "Solinar adjusts a crystalline focus. 'Every spell is a question posed to the universe—mind the answers it returns.'",
+            "'Balance your energies, lest the ley-lines twist against you,' the archmage intones softly.",
+            "Solinar traces a sigil in the air. 'Fascinating... your tale resonates with the Ninth Conjunction.'",
+        ],
+        "farewell": (
+            "The archmage's form dissolves into motes of light. 'May your paths remain aligned with destiny.'"
+        ),
+    },
+    "rogue": {
+        "label": "Shade the Whisper",
+        "description": "A quick-witted rogue with a penchant for teasing banter and streetwise tips.",
+        "system_prompt": (
+            "You are Shade the Whisper, a roguish informant who speaks with playful charm and a hint of mischief. "
+            "Offer sly advice, share underworld rumors, and keep replies short and snappy as if you're always on the move."
+        ),
+        "static_opening": (
+            "*A shadow slips from the rafters with a grin.*\n"
+            "Evening, crew. Shade's the name—heard you're up to something interesting. Need a tip or two?"
+        ),
+        "static_replies": [
+            "Shade flicks a coin. 'Heard the watch doubles patrols at midnight—plan accordingly.'",
+            "'Keep your blades oiled and your lies straight,' Shade chuckles, eyes scanning the room.",
+            "Shade smirks. 'If anyone asks, you never saw me—and I never saw that treasure map tucked at your belt.'",
+        ],
+        "farewell": (
+            "With a two-finger salute, Shade fades back into the shadows. 'Stay quiet, stay clever.'"
+        ),
+    },
+}
+
+
+@dataclass
+class NPCSession:
+    session_id: str
+    personality_key: str
+    mode: str
+    expires_at: datetime
+    history: list = field(default_factory=list)
+    response_index: int = 0
+    farewell_sent: bool = False
+    cleanup_task: asyncio.Task | None = None
+
+
+npc_sessions: dict[int, NPCSession] = {}
+
+
+def get_target_guild() -> discord.Guild | None:
+    if not DISCORD_GUILD_ID:
+        return None
+    try:
+        guild_id = int(DISCORD_GUILD_ID)
+    except (TypeError, ValueError):
+        return None
+    return bot.get_guild(guild_id)
+
+
+def get_available_npc_channels(guild: discord.Guild) -> list[discord.TextChannel]:
+    if not guild:
+        return []
+    if NPC_CHANNEL_IDS:
+        channels: list[discord.TextChannel] = []
+        for channel_id in NPC_CHANNEL_IDS:
+            channel = guild.get_channel(channel_id)
+            if isinstance(channel, discord.TextChannel):
+                channels.append(channel)
+        return channels
+    return [channel for channel in guild.text_channels if channel.permissions_for(guild.me).send_messages]
+
+
+async def create_openai_chat_completion(messages: list[dict], max_tokens: int = 200, temperature: float = 0.7) -> str:
+    try:
+        response = await asyncio.to_thread(
+            openai.ChatCompletion.create,
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        return response["choices"][0]["message"]["content"].strip()
+    except Exception as error:
+        print(f"Error generating NPC response: {error}")
+        return "The character hesitates, unable to find the right words."
+
+
+async def schedule_session_cleanup(channel_id: int, session_id: str, personality_key: str):
+    await asyncio.sleep(NPC_SESSION_DURATION_MINUTES * 60)
+    session = npc_sessions.get(channel_id)
+    if not session or session.session_id != session_id:
+        return
+    personality = NPC_PERSONALITIES.get(personality_key)
+    channel = bot.get_channel(channel_id)
+    if channel and personality:
+        await channel.send(personality["farewell"])
+    npc_sessions.pop(channel_id, None)
+
+
+async def start_npc_session(channel: discord.TextChannel, personality_key: str, mode: str) -> str:
+    personality = NPC_PERSONALITIES[personality_key]
+    existing_session = npc_sessions.get(channel.id)
+    if existing_session and existing_session.cleanup_task:
+        existing_session.cleanup_task.cancel()
+        npc_sessions.pop(channel.id, None)
+
+    session_id = uuid.uuid4().hex
+    expires_at = datetime.utcnow() + timedelta(minutes=NPC_SESSION_DURATION_MINUTES)
+    session = NPCSession(
+        session_id=session_id,
+        personality_key=personality_key,
+        mode=mode,
+        expires_at=expires_at,
+    )
+
+    npc_sessions[channel.id] = session
+    session.cleanup_task = asyncio.create_task(
+        schedule_session_cleanup(channel.id, session.session_id, personality_key)
+    )
+
+    if mode == "static":
+        await channel.send(personality["static_opening"])
+        return f"Started {personality['label']} in {channel.mention} with static dialogue."
+
+    history = [
+        {"role": "system", "content": personality["system_prompt"]},
+        {
+            "role": "user",
+            "content": "Offer a brief in-character greeting as you join the adventurers in their discussion.",
+        },
+    ]
+    response = await create_openai_chat_completion(history, max_tokens=180)
+    session.history = history + [{"role": "assistant", "content": response}]
+    await channel.send(response)
+    return f"Started {personality['label']} in {channel.mention} with OpenAI responses."
+
+
+async def handle_npc_message(message: discord.Message, session: NPCSession) -> bool:
+    if datetime.utcnow() >= session.expires_at:
+        personality = NPC_PERSONALITIES.get(session.personality_key)
+        if personality and not session.farewell_sent:
+            await message.channel.send(personality["farewell"])
+            session.farewell_sent = True
+        npc_sessions.pop(message.channel.id, None)
+        return True
+
+    personality = NPC_PERSONALITIES.get(session.personality_key)
+    if not personality:
+        npc_sessions.pop(message.channel.id, None)
+        return False
+
+    if session.mode == "static":
+        replies = personality["static_replies"]
+        if not replies:
+            return False
+        reply = replies[session.response_index % len(replies)]
+        session.response_index += 1
+        await message.channel.send(reply)
+        return True
+
+    history = session.history[-8:] if session.history else []
+    if not history:
+        history = [{"role": "system", "content": personality["system_prompt"]}]
+    history.append({"role": "user", "content": message.content})
+    response = await create_openai_chat_completion(history, max_tokens=220)
+    history.append({"role": "assistant", "content": response})
+    session.history = history
+    await message.channel.send(response)
+    return True
+
+
+class NPCChannelSelect(discord.ui.Select):
+    def __init__(self, channels: list[discord.TextChannel]):
+        options = [
+            discord.SelectOption(label=channel.name, value=str(channel.id))
+            for channel in channels
+        ]
+        super().__init__(placeholder="Select a channel", options=options, min_values=1, max_values=1)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected_channel_id = int(self.values[0])
+        await interaction.response.defer()
+
+
+class NPCPersonalitySelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(
+                label=data["label"],
+                value=key,
+                description=data["description"][:100],
+            )
+            for key, data in NPC_PERSONALITIES.items()
+        ]
+        super().__init__(
+            placeholder="Choose an NPC persona",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected_personality_key = self.values[0]
+        await interaction.response.defer()
+
+
+class NPCResponseModeSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="Static pre-written dialogue", value="static"),
+            discord.SelectOption(label="Dynamic OpenAI dialogue", value="openai"),
+        ]
+        super().__init__(
+            placeholder="How should the NPC respond?",
+            options=options,
+            min_values=1,
+            max_values=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected_mode = self.values[0]
+        await interaction.response.defer()
+
+
+class NPCInteractionView(discord.ui.View):
+    def __init__(self, requester: discord.User, channels: list[discord.TextChannel]):
+        super().__init__(timeout=180)
+        self.requester = requester
+        self.selected_channel_id: int | None = None
+        self.selected_personality_key: str | None = None
+        self.selected_mode: str = "static"
+        self.add_item(NPCChannelSelect(channels))
+        self.add_item(NPCPersonalitySelect())
+        self.add_item(NPCResponseModeSelect())
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user.id == self.requester.id
+
+    @discord.ui.button(label="Start NPC Scene", style=discord.ButtonStyle.primary)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.selected_channel_id or not self.selected_personality_key:
+            await interaction.response.send_message(
+                "Please select both a channel and an NPC personality before starting.",
+                ephemeral=False,
+            )
+            return
+
+        channel = bot.get_channel(self.selected_channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            await interaction.response.send_message(
+                "I couldn't access that channel. Please try again.", ephemeral=False
+            )
+            return
+
+        await interaction.response.defer()
+        message = await start_npc_session(channel, self.selected_personality_key, self.selected_mode)
+        await interaction.followup.send(message)
+        self.stop()
+
 
 def get_twitch_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
@@ -117,6 +420,12 @@ async def on_message(message):
 
     # Work with a lowercase copy of the message content for case-insensitive checks
     message_content = message.content.lower()
+
+    session = npc_sessions.get(message.channel.id)
+    if session:
+        handled = await handle_npc_message(message, session)
+        if handled:
+            return
 
     # Define trigger phrases for image generation
     trigger_phrases = ["show me a picture of", "i wonder what a", "image of"]
@@ -214,6 +523,40 @@ async def send_good_morning():
     channel = bot.get_channel(842847835803615292)
     if channel:
         await channel.send(message)
+
+@bot.command(name="npc")
+async def npc(ctx: commands.Context):
+    guild = get_target_guild() or ctx.guild
+    if not guild and hasattr(ctx.author, "mutual_guilds"):
+        mutuals = ctx.author.mutual_guilds
+        if mutuals:
+            guild = mutuals[0]
+
+    if not guild:
+        await ctx.send("Ich konnte keinen Server finden, auf dem ich sprechen darf.")
+        return
+
+    channels = get_available_npc_channels(guild)
+    if not channels:
+        await ctx.send("Für dieses Feature sind keine geeigneten Textkanäle freigegeben.")
+        return
+
+    if isinstance(ctx.channel, discord.DMChannel):
+        destination = ctx.channel
+    else:
+        destination = await ctx.author.create_dm()
+        await ctx.send("Ich habe dir ein Menü per Direktnachricht geschickt.")
+
+    intro = (
+        "Wähle den Zielkanal, die Persönlichkeit und ob die Antworten statisch oder per OpenAI generiert werden sollen.\n"
+        f"Die Szene endet automatisch nach {NPC_SESSION_DURATION_MINUTES} Minuten."
+    )
+    view = NPCInteractionView(ctx.author, channels)
+    try:
+        await destination.send(intro, view=view)
+    except discord.Forbidden:
+        await ctx.send("Ich kann dir leider keine Direktnachrichten schicken.")
+
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
