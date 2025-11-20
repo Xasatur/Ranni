@@ -769,6 +769,36 @@ async def jojo(ctx):
     await ctx.send(embed=embed)
 
 
+@bot.command(name='twitch')
+async def twitch(ctx, twitch_channel: str | None = None, display_name: str | None = None):
+    if not twitch_channel:
+        await ctx.send("Usage: !twitch <twitch_channel> [display_name]")
+        return
+
+    base_url = twitch_channel if twitch_channel.startswith("http") else f"https://twitch.tv/{twitch_channel}"
+    name = display_name or twitch_channel
+
+    embed = discord.Embed(
+        title=name,
+        url=base_url,
+        description=f"Follow {name} on Twitch 💜\n{base_url}",
+        color=0x800080
+    )
+
+    embed.set_author(
+        name=name,
+        icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png",
+    )
+    embed.set_thumbnail(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png")
+    embed.set_image(url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/58ecd762c933e5b4b65cd3714f71b74dfe1545888604d79eaf62d27447e671b6.png")
+    embed.set_footer(
+        text="Hunter's Dream",
+        icon_url="https://cdn-longterm.mee6.xyz/plugins/embeds/images/841775840089473054/59693adf8df159b68a10619df0c7ee56feacf47e10468844ca4ab5b2358aee9c.png",
+    )
+
+    await ctx.send(embed=embed)
+
+
 if __name__ == '__main__':
     # Start bot
     bot.run(os.getenv('DISCORD_BOT_TOKEN'))
