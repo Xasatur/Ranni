@@ -1,7 +1,7 @@
-"""Opt-in experimental commands for the existing discord.py bot."""
+"""Owner-only experimental commands for Ranni."""
 import os
-from discord.ext import commands
 from .pc_status import get_pc_status, format_pc_status
+
 
 def install(bot):
     @bot.group(name="pc", invoke_without_command=True)
@@ -10,8 +10,8 @@ def install(bot):
 
     @pc.command(name="status")
     async def pc_status(ctx):
-        allowed = os.getenv("RANNI_OWNER_DISCORD_ID", "").strip()
-        if not allowed or str(ctx.author.id) != allowed:
+        owner_id = os.getenv("RANNI_OWNER_DISCORD_ID", "").strip()
+        if not owner_id or str(ctx.author.id) != owner_id:
             await ctx.send("Dieser Befehl ist nur für den konfigurierten Besitzer verfügbar.")
             return
-        await ctx.send(format_pc_status(get_pc_status()))
+        await ctx.send(format_pc_status(await get_pc_status()))
