@@ -8,7 +8,7 @@ import uuid
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import openai
+from openai import AsyncOpenAI
 import requests
 
 load_dotenv()
@@ -51,10 +51,12 @@ def load_bot_personality(file_path):
 
 twitch_client_id = os.getenv('TWITCH_CLIENT_ID')
 twitch_client_secret = os.getenv('TWITCH_CLIENT_SECRET')
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", "not-configured"))
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 intents = discord.Intents.default()
 intents.messages = True
+intents.message_content = True
 intents.guilds = True
 intents.members = True  # Enabling the GUILD_MEMBERS intent
 
@@ -177,14 +179,11 @@ def get_available_npc_channels(guild: discord.Guild) -> list[discord.TextChannel
 
 async def create_openai_chat_completion(messages: list[dict], max_tokens: int = 200, temperature: float = 0.7) -> str:
     try:
-        response = await asyncio.to_thread(
-            openai.ChatCompletion.create,
-            model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
+        response = await openai_client.chat.completions.create(
+            model=OPENAI_MODEL, messages=messages,
+            max_tokens=max_tokens, temperature=temperature,
         )
-        return response["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
     except Exception as error:
         print(f"Error generating NPC response: {error}")
         return "The character hesitates, unable to find the right words."
@@ -392,13 +391,11 @@ async def generate_image_with_dalle(prompt: str) -> str:
     always receives a usable string.
     """
     try:
-        response = await asyncio.to_thread(
-            openai.Image.create,
-            prompt=prompt,
-            n=1,
-            size="512x512",
+        response = await openai_client.images.generate(
+            model=os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1"),
+            prompt=prompt, n=1, size="1024x1024",
         )
-        return response["data"][0]["url"]
+        return response.data[0].url or ""
     except Exception as e:
         print(f"Error generating image: {e}")
         return "https://via.placeholder.com/512?text=Image+Unavailable"
@@ -411,9 +408,8 @@ async def generate_short_answer(prompt: str) -> str:
     graceful.
     """
     try:
-        response = await asyncio.to_thread(
-            openai.ChatCompletion.create,
-            model="gpt-3.5-turbo",
+        response = await openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": bot_personality},
                 {"role": "user", "content": prompt},
@@ -421,7 +417,7 @@ async def generate_short_answer(prompt: str) -> str:
             max_tokens=60,
             temperature=0.7,
         )
-        return response["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error generating short answer: {e}")
         return "I'm not sure how to respond to that."
@@ -430,8 +426,10 @@ async def generate_short_answer(prompt: str) -> str:
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} has connected to Discord!")
-    send_good_morning.start()
-    check_twitch_streams.start()
+    if not send_good_morning.is_running():
+        send_good_morning.start()
+    if not check_twitch_streams.is_running():
+        check_twitch_streams.start()
 
 async def generate_good_morning_message():
     # Randomly select the type of content for variety
@@ -446,12 +444,12 @@ async def generate_good_morning_message():
     ]
     selected_content = random.choice(content_options)
     
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=f"Write {selected_content} for a Discord community to enjoy in the morning.",
-        max_tokens=150  # Increase max_tokens for potentially longer content
+    response = await openai_client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[{"role": "user", "content": f"Write {selected_content} for a Discord community to enjoy in the morning."}],
+        max_tokens=150,
     )
-    return response.choices[0].text.strip()
+    return (response.choices[0].message.content or "").strip()
 
 
 @bot.event
@@ -493,54 +491,49 @@ async def on_message(message):
         keywords = ["rannibot", "ranni", "praise the sun", "one piece"]
         if mentioned or any(keyword in message_content for keyword in keywords):
             await bot.wait_until_ready()
-            data = {
-                "model": "gpt-3.5-turbo",
-                "messages": [
-                    {"role": "system", "content": bot_personality},
-                    {"role": "user", "content": message.content},
-                ],
-                "max_tokens": 1000,
-                "temperature": 0.7,
-            }
-
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {openai.api_key}",
-            }
-
-            response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers=headers,
-                json=data,
-            ).json()
-
-            if 'choices' in response:
-                ai_response = response["choices"][0]["message"]["content"].strip()[:2000]  # Truncate to 2000 characters
-                await message.channel.send(ai_response)
-            else:
-                print("Error:", response.get("error"))
+            try:
+                result = await openai_client.chat.completions.create(
+                    model=OPENAI_MODEL,
+                    messages=[
+                        {"role": "system", "content": bot_personality},
+                        {"role": "user", "content": message.content},
+                    ],
+                    max_tokens=1000,
+                )
+                answer = (result.choices[0].message.content or "")[:2000]
+                if answer:
+                    await message.channel.send(answer)
+            except Exception as error:
+                print(f"OpenAI response failed: {error}")
 
     await bot.process_commands(message)
 
-twitch_token = get_twitch_token(twitch_client_id, twitch_client_secret)
+twitch_token = None
 
 @tasks.loop(minutes=5)
 async def check_twitch_streams():
     global twitch_token, active_streams
+    if not twitch_client_id or not twitch_client_secret:
+        return
+    if not twitch_token:
+        twitch_token = await asyncio.to_thread(get_twitch_token, twitch_client_id, twitch_client_secret)
+    if not twitch_token:
+        return
     headers = {'Client-ID': twitch_client_id, 'Authorization': f'Bearer {twitch_token}'}
 
     # List of Twitch usernames to monitor
     twitch_users = ['jj_da_silva_', 'Kamaloya_', 'Pestdoktor_Dim', 'Slyntia', 'XanRobins', 'Xasaturr', 'Redskater90', 'SirPrimeRIP', 'HeimGamerKing', 'SimplyJackTV']
 
     for user in twitch_users:
-        response = requests.get(f'https://api.twitch.tv/helix/streams?user_login={user}', headers=headers)
+        response = await asyncio.to_thread(requests.get, f'https://api.twitch.tv/helix/streams?user_login={user}', headers=headers, timeout=15)
         data = response.json()
 
         if data['data']:  # If the user is currently streaming
             if user not in active_streams:
                 # Stream just went live, send notification
                 channel = bot.get_channel(842884135978926120)
-                await channel.send(f"@all {user} is now live on Twitch! https://twitch.tv/{user}")
+                if channel:
+                    await channel.send(f"@all {user} is now live on Twitch! https://twitch.tv/{user}")
                 active_streams.add(user)
         else:
             # Stream is offline, remove from active streams
@@ -660,8 +653,7 @@ async def ban(ctx, member: discord.Member):
 @bot.command()
 @commands.has_permissions(ban_members=True)
 async def unban(ctx, user: discord.User):
-    banned_users = await ctx.guild.bans()
-    for ban_entry in banned_users:
+    async for ban_entry in ctx.guild.bans(limit=None):
         if ban_entry.user.id == user.id:
             await ctx.guild.unban(user)
             await ctx.send(f"{user.name} has been unbanned.")
