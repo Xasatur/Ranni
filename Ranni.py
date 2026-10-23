@@ -183,7 +183,7 @@ async def create_openai_chat_completion(messages: list[dict], max_tokens: int = 
             model=OPENAI_MODEL, messages=messages,
             max_tokens=max_tokens, temperature=temperature,
         )
-        return response.choices[0].message.content.strip()
+        return (response.choices[0].message.content or "").strip()
     except Exception as error:
         print(f"Error generating NPC response: {error}")
         return "The character hesitates, unable to find the right words."
@@ -417,7 +417,7 @@ async def generate_short_answer(prompt: str) -> str:
             max_tokens=60,
             temperature=0.7,
         )
-        return response.choices[0].message.content.strip()
+        return (response.choices[0].message.content or "").strip()
     except Exception as e:
         print(f"Error generating short answer: {e}")
         return "I'm not sure how to respond to that."
@@ -483,7 +483,8 @@ async def on_message(message):
 
         # Create an embed for the image
         embed = discord.Embed(description=short_answer)
-        embed.set_image(url=image_url)  # Set the image URL here
+        if image_url:
+            embed.set_image(url=image_url)
         await message.channel.send(embed=embed)
     else:
         # Existing functionality for responding to other keywords or mentions
