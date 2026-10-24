@@ -1,9 +1,8 @@
 """Read a Home Assistant binary_sensor through its authenticated REST API."""
 import asyncio
-import json
 import os
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from .home_assistant import request_json
 
 
 def format_pc_status(status):
@@ -11,13 +10,7 @@ def format_pc_status(status):
 
 
 def _fetch_state(base_url, token, entity_id):
-    url = base_url.rstrip("/") + "/api/states/" + entity_id
-    request = Request(url, headers={
-        "Authorization": "Bearer " + token,
-        "Accept": "application/json",
-    })
-    with urlopen(request, timeout=6) as response:
-        return json.load(response)
+    return request_json(base_url, token, "/api/states/" + entity_id)
 
 
 async def get_pc_status():

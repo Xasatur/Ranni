@@ -28,7 +28,15 @@ Evolve a legacy Discord bot, **Ranni**, into a personal assistant that coordinat
 - Run commands using PowerShell syntax only when in PowerShell; CMD differs. For interactive python snippets, prefer standalone `python -c` or project-local scripts.
 - No assumption that Ranni can wake its *own host* after it sleeps; while desktop sleeps the desktop-hosted Discord process is offline. Long-term wake needs an always-online bot deployment or separate relay.
 
-## Next task: `!pc wake` (implement in Codex after code inspection)
+## Wake milestone update (2026-10-24)
+- Implemented owner-only `!pc wake` with rejected Discord arguments and a fixed `HOME_ASSISTANT_WAKE_ENTITY` script target.
+- Shared REST transport in `ranni_assistant/home_assistant.py`: off-thread I/O, six-second socket timeout, eight-second wake caller deadline, rejected redirects, sanitized failures and no automatic retries. Status remains available.
+- User created the Home Assistant script and confirmed the request-accepted reply after configuring the entity in local `.env` and restarting Ranni Dev. Updating `.env.example` alone does not configure the bot.
+- API acceptance is confirmed; script trace success and physical wake from sleep remain unverified. Test the script from Home Assistant on another device while the gaming PC sleeps.
+- Ranni Dev cannot receive commands while its own host sleeps. Always-on hosting and secure remote access remain future work; do not deploy or change production networking without authorization.
+- Setup instructions: `RANNI_ASSISTANT_DEV.md`. Verification: `python -m unittest discover -s tests -v` (13 tests passed).
+
+## Original wake implementation checklist (historical)
 1. Inspect existing commands, HA integration, tests and user-defined configuration.
 2. Confirm the Home Assistant **wake-on-LAN integration/service** is configured and enabled; when possible use a Home Assistant script for an explicitly allowlisted wake action instead of accepting arbitrary addresses or service arguments from Discord. The existing Ping sensor is only a status sensor and **cannot itself wake the PC**.
 3. Add a new **owner-only** `!pc wake` command alongside `!pc status`. Keep the command nonblocking. POST to HA REST `/api/services/<domain>/<service>` authenticated with Bearer token and JSON for an explicitly configured service/script. Do not expose arbitrary HA service calls or arbitrary shell commands to Discord.
