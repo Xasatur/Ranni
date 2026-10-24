@@ -1,9 +1,13 @@
-"""Development launcher: original Ranni with opt-in experimental features.
+"""Development launcher for experimental Ranni features.
 
-Run this file only for testing; production Procfile remains unchanged.
-Requires the existing Ranni dependencies and DISCORD_BOT_TOKEN.
+Only the development entrypoint loads local .env with precedence over inherited
+environment variables. The production Procfile and launcher are unchanged.
 """
 import os
+from dotenv import load_dotenv
+
+load_dotenv(".env", override=True)
+
 import Ranni
 from ranni_assistant.commands import install
 
