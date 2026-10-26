@@ -2,6 +2,7 @@
 import os
 from .pc_status import get_pc_status, format_pc_status
 from .pc_wake import wake_pc
+from .bridge_state import get_status as get_bridge_status
 
 
 def install(bot):
@@ -15,7 +16,10 @@ def install(bot):
         if not owner_id or str(ctx.author.id) != owner_id:
             await ctx.send("Dieser Befehl ist nur für den konfigurierten Besitzer verfügbar.")
             return
-        await ctx.send(format_pc_status(await get_pc_status()))
+        if os.getenv("RANNI_BRIDGE_MODE") == "push":
+            await ctx.send(format_pc_status(get_bridge_status()))
+        else:
+            await ctx.send(format_pc_status(await get_pc_status()))
 
     @pc.command(name="wake")
     async def pc_wake(ctx, *, arguments=""):
@@ -25,5 +29,8 @@ def install(bot):
             return
         if arguments:
             await ctx.send("Verwendung: `!pc wake` ohne Argumente.")
+            return
+        if os.getenv("RANNI_BRIDGE_MODE") == "push":
+            await ctx.send("Wake via Bridge ist noch nicht freigeschaltet. Nur Statusabfrage verfügbar.")
             return
         await ctx.send(await wake_pc())
