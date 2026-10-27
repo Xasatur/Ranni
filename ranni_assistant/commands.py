@@ -3,6 +3,7 @@ import os
 from .pc_status import get_pc_status, format_pc_status
 from .pc_wake import wake_pc
 from .bridge_state import get_status as get_bridge_status
+from .wake_queue import request_wake
 
 
 def install(bot):
@@ -31,6 +32,7 @@ def install(bot):
             await ctx.send("Verwendung: `!pc wake` ohne Argumente.")
             return
         if os.getenv("RANNI_BRIDGE_MODE") == "push":
-            await ctx.send("Wake via Bridge ist noch nicht freigeschaltet. Nur Statusabfrage verfügbar.")
+            _, message = request_wake()
+            await ctx.send(message)
             return
         await ctx.send(await wake_pc())
