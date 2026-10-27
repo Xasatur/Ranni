@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv(".env", override=True)
 
 from ranni_assistant.bridge_state import set_state
+from ranni_assistant.wake_queue import claim_wake
 import Ranni
 from ranni_assistant.commands import install
 
@@ -40,6 +41,14 @@ async def status_push(request):
     return web.json_response({"ok": True})
 
 
+async def wake_poll(request):
+    expected = os.environ["RANNI_BRIDGE_SECRET"]
+    if not hmac.compare_digest(request.headers.get("Authorization", ""), "Bearer " + expected):
+        raise web.HTTPUnauthorized()
+    task = claim_wake()
+    return web.json_response(task or {"action": "none"})
+
+
 async def main():
     for key in ("DISCORD_BOT_TOKEN", "RANNI_BRIDGE_SECRET", "RANNI_OWNER_DISCORD_ID"):
         if not os.getenv(key):
@@ -48,6 +57,7 @@ async def main():
     app = web.Application(client_max_size=512)
     app.router.add_get("/health", health)
     app.router.add_post("/bridge/status", status_push)
+    app.router.add_get("/bridge/next", wake_poll)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host="0.0.0.0", port=int(os.environ["PORT"]))
